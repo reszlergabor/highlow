@@ -1,14 +1,8 @@
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
 import os
-#import fitz
-#from PDFNetPython3 import PDFDoc, Optimizer, SDFDoc
-
-
-
-#from PyPDF2 import PdfWriter, PdfReader
 from pypdf import PdfReader, PdfWriter
-#from reportlab.lib.pagesizes import letter
-#from reportlab.pdfgen import canvas
+from pdf2image import convert_from_path
+
 
 desktop_path = os.path.expanduser("~/Desktop")
 input_path = os.path.join(desktop_path, "highlow/input/")
@@ -37,14 +31,22 @@ def folderMaker():
 def pdfCropper():
     for filename in os.listdir(input_path):
         if filename.endswith(".pdf"):
+
+            # Eredeti fájlnév utolsó 8 karakterének eltávolítása
+            base_filename = os.path.splitext(filename)[0]
+            shortened_filename = base_filename[:-8]+".pdf"
+
+
             input_file_path = os.path.join(input_path, filename)
-            high_output_file_path = os.path.join(high_path, filename)
-            low_output_file_path = os.path.join(low_path, filename)
+            high_output_file_path = os.path.join(high_path, shortened_filename)
+            #low_output_file_path = os.path.join(low_path, filename)
+
+
 
 
             pdf_reader = PdfReader(input_file_path)
             pdf_writer_high = PdfWriter()
-            pdf_writer_low = PdfWriter()
+            #pdf_writer_low = PdfWriter()
 
 
             for page_num in range(len(pdf_reader.pages)):
@@ -61,9 +63,9 @@ def pdfCropper():
 
             
 
-
-
             
+
+        
 
 
             
@@ -93,7 +95,26 @@ def compress_pdf():
 
 
 
+def convert_to_jpg():
 
+    for filename in os.listdir(low_path):
+        if filename.endswith(".pdf"):
+            high_output_file_path = os.path.join(high_path, filename)
+            pages = convert_from_path(high_output_file_path)
+             
+            for count, page in enumerate(pages):
+                jpg_output_file_path = os.path.join(jpg_path, f"{os.path.splitext(filename)[0]}.jpg")
+                page.save(jpg_output_file_path, 'JPEG')
+
+
+def crop_jpgs():
+    for filename in os.listdir(jpg_path):
+        if filename.endswith(".jpg"):
+            temp_file_path = os.path.join(jpg_path, filename)
+            img = Image.open(temp_file_path)
+            cropped_img = img.crop((88,53,2425,2700))
+
+            cropped_img.save(jpg_path + filename)
 
 
 
@@ -102,3 +123,5 @@ def compress_pdf():
 folderMaker()
 pdfCropper()
 compress_pdf()
+convert_to_jpg()
+crop_jpgs()
