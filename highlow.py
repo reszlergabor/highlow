@@ -1,9 +1,14 @@
 from PIL import Image
 import os
+#import fitz
+#from PDFNetPython3 import PDFDoc, Optimizer, SDFDoc
 
-from PyPDF2 import PdfWriter, PdfReader
-from reportlab.lib.pagesizes import letter
-from reportlab.pdfgen import canvas
+
+
+#from PyPDF2 import PdfWriter, PdfReader
+from pypdf import PdfReader, PdfWriter
+#from reportlab.lib.pagesizes import letter
+#from reportlab.pdfgen import canvas
 
 desktop_path = os.path.expanduser("~/Desktop")
 input_path = os.path.join(desktop_path, "highlow/input/")
@@ -11,12 +16,8 @@ output_path = os.path.join(desktop_path, "highlow/output/")
 high_path = os.path.join(desktop_path, "highlow/output/_JPG_PDF/high/")
 low_path = os.path.join(desktop_path, "highlow/output/_JPG_PDF/low/")
 jpg_path = os.path.join(desktop_path, "highlow/output/_JPG_PDF/jpg/")
+low_pdf_quality = 5
 
-# Levágási méret
-#margin_to_cut = 5  # mm-ben
-
-# Konvertálás pontonként pixelre (1 inch = 25.4 mm)
-#margin_to_cut_pixel = margin_to_cut / 25.4 * 72
 
 def folderMaker():
     # Ellenőrizzük, hogy a kimeneti mappa létezik-e
@@ -34,22 +35,23 @@ def folderMaker():
 
 
 def pdfCropper():
-    # PDF-ek levágása
     for filename in os.listdir(input_path):
         if filename.endswith(".pdf"):
             input_file_path = os.path.join(input_path, filename)
             high_output_file_path = os.path.join(high_path, filename)
             low_output_file_path = os.path.join(low_path, filename)
 
+
             pdf_reader = PdfReader(input_file_path)
             pdf_writer_high = PdfWriter()
             pdf_writer_low = PdfWriter()
 
+
             for page_num in range(len(pdf_reader.pages)):
                 page = pdf_reader.pages[page_num]
                 # Oldal méretének módosítása
-                #page.trimbox.lower_left = (25, 25)
-                #page.trimbox.upper_right = (225, 225)
+                # page.trimbox.lower_left = (25, 25)
+                # page.trimbox.upper_right = (225, 225)
                 page.cropbox.lower_left = (32, 32)
                 page.cropbox.upper_right = (874, 969)
                 pdf_writer_high.add_page(page)
@@ -57,13 +59,46 @@ def pdfCropper():
             with open(high_output_file_path, "wb") as output_file:
                 pdf_writer_high.write(output_file)
 
-            page.compress_content_streams()  # This is CPU intensive!
-            pdf_writer_low.add_page(page)
+            
 
+
+
+            
+
+
+            
+
+
+def compress_pdf():
+    for filename in os.listdir(high_path):
+        if filename.endswith(".pdf"):
+            high_output_file_path = os.path.join(high_path, filename)
+            low_output_file_path = os.path.join(low_path, filename)
+
+            input_file_path = os.path.join(high_output_file_path)
+            pdf_reader = PdfReader(input_file_path)
+            pdf_writer_low = PdfWriter()
+
+            for page_num in range(len(pdf_reader.pages)):
+                page = pdf_reader.pages[page_num]
+                for page in pdf_reader.pages:
+                    pdf_writer_low.add_page(page)
+
+                for page in pdf_writer_low.pages:
+                    for img in page.images:
+                        img.replace(img.image, quality=low_pdf_quality)
+                
             with open(low_output_file_path, "wb") as output_file:
                 pdf_writer_low.write(output_file)
 
-#print("Levágás kész.")
+
+
+
+
+
+
+
 
 folderMaker()
 pdfCropper()
+compress_pdf()
