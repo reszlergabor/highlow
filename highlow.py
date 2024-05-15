@@ -1,7 +1,7 @@
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image
 import os
 from pypdf import PdfReader, PdfWriter
-from pdf2image import convert_from_path
+import pymupdf
 
 
 desktop_path = os.path.expanduser("~/Desktop")
@@ -10,7 +10,14 @@ output_path = os.path.join(desktop_path, "highlow/output/")
 high_path = os.path.join(desktop_path, "highlow/output/_JPG_PDF/high/")
 low_path = os.path.join(desktop_path, "highlow/output/_JPG_PDF/low/")
 jpg_path = os.path.join(desktop_path, "highlow/output/_JPG_PDF/jpg/")
-low_pdf_quality = 5
+low_pdf_quality = 5 #1-100-ig
+
+#pdf-jpg konvertalas, minel nagyobb, annal kevesebb feher vonal lesz:
+zoom_x = 4.5  # horizontal zoom jpg irasnal
+zoom_y = 4.5  # vertical zoom jpg irasnal
+
+final_jpg_compress_ratio = 30
+
 
 
 def folderMaker():
@@ -94,7 +101,8 @@ def compress_pdf():
                 pdf_writer_low.write(output_file)
 
 
-
+"""
+Ez a korabbi, mukodo fuggveny:
 def convert_to_jpg():
 
     for filename in os.listdir(low_path):
@@ -106,7 +114,22 @@ def convert_to_jpg():
                 jpg_output_file_path = os.path.join(jpg_path, f"{os.path.splitext(filename)[0]}.jpg")
                 page.save(jpg_output_file_path, 'JPEG')
 
+"""
 
+def convert_to_jpg():
+    for filename in os.listdir(high_path):
+        if filename.endswith(".pdf"):
+            high_input_file_path = os.path.join(high_path, filename)
+            mat = pymupdf.Matrix(zoom_x, zoom_y)
+
+            doc = pymupdf.open(high_input_file_path)  # open document
+            for page in doc:  # iterate through the pages
+                pix = page.get_pixmap(matrix=mat)  # render page to an image
+                jpg_output_file_path = os.path.join(jpg_path, f"{os.path.splitext(filename)[0]}.jpg")
+                pix.save(jpg_output_file_path)  # store image as a PNG
+
+
+#ez a fuggveny vegul nem kell:
 def crop_jpgs():
     for filename in os.listdir(jpg_path):
         if filename.endswith(".jpg"):
@@ -116,6 +139,15 @@ def crop_jpgs():
 
             cropped_img.save(jpg_path + filename)
 
+def compress_jpgs():
+    for filename in os.listdir(jpg_path):
+        if filename.endswith(".jpg"):
+            jpg_input_file_path = os.path.join(jpg_path, filename)
+
+            image = Image.open(jpg_input_file_path)
+            image.save(jpg_input_file_path,quality=final_jpg_compress_ratio,optimize=True)
+
+
 
 
 
@@ -124,4 +156,4 @@ folderMaker()
 pdfCropper()
 compress_pdf()
 convert_to_jpg()
-crop_jpgs()
+compress_jpgs()
